@@ -1,5 +1,5 @@
 function getToken(){
-  return 'xoxp-49475865489-579981997600-621318108576-699299cb35a2c9f864cd15b02090d28d';
+  return 'SLACK_TOKEN';
 }
 
 function strIns(str, idx, val){
