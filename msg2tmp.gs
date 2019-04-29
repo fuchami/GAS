@@ -1,5 +1,5 @@
 function getToken(){
-  return 'xoxp-49475865489-579981997600-620685873348-3cd675ee2130acaa60a238a2485de857';
+  return 'xoxp-49475865489-579981997600-621318108576-699299cb35a2c9f864cd15b02090d28d';
 }
 
 function strIns(str, idx, val){
@@ -12,7 +12,7 @@ function splitUrl(url) {
   var ary = url.split('/');
   var channel = ary[4];
   //Logger.log(ary[5].slice(1));
-  var timestamp = strIns(ary[5].slice(1), 10, '.'); //pを覗いて間に点を入れる
+  var timestamp = strIns(ary[5].slice(1, -1), 10, '.'); //pを覗いて間に点を入れる
   Logger.log(timestamp);
   return { channel:channel, timestamp:timestamp }
 }
@@ -109,20 +109,23 @@ function flow(url) {
   // urlから必要な情報を得る
   var spliturl = splitUrl(url);
   Logger.log(spliturl);
+  //docs.getBody().setText(spliturl.channel + '\n' + spliturl.timestamp);
+
   // 情報を取得する
   var response = JSON.parse(getReaction(spliturl.channel, spliturl.timestamp));
-  Logger.log(response);
+  Logger.log(response.message.reactions);
   var attendList = getAttendList(response.message.reactions);
+  
   // 書き込み  
   docs.getBody().setText(contents + attendList);
   
   // 作成したドキュメントURLを取得
   var documentUrl = docs.getUrl();
-  Logger.log(documentUrl);
   
   return documentUrl
 }
 
+// postされたらここから実行される
 function doPost(e) {
   var token = PropertiesService.getScriptProperties().getProperty(getToken());
   
@@ -134,7 +137,6 @@ function doPost(e) {
   
   var app = SlackApp.create(token);
   var url = e.parameter.text.substr(6);
-  //var url = 'https://kadaiinfo.slack.com/archives/C8A0Z19F0/p1555403699015200';
 
   documentUrl = flow(url);
   
