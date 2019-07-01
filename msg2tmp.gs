@@ -1,5 +1,6 @@
 function getToken(){
-  return 'SLACK_TOKEN';
+  var token = PropertiesService.getScriptProperties().getProperty('SLACK_ACCESS_TOKEN');
+  return token
 }
 
 function strIns(str, idx, val){
@@ -11,9 +12,7 @@ function strIns(str, idx, val){
 function splitUrl(url) {
   var ary = url.split('/');
   var channel = ary[4];
-  //Logger.log(ary[5].slice(1));
-  var timestamp = strIns(ary[5].slice(1, -1), 10, '.'); //pを覗いて間に点を入れる
-  Logger.log(timestamp);
+  var timestamp = strIns(ary[5].slice(1,-1), 10, '.');
   return { channel:channel, timestamp:timestamp }
 }
 
@@ -25,7 +24,7 @@ function getReaction(channel, timestamp) {
     channel: channel,
     timestamp: timestamp
   };
-  
+
   // パラメータ設定
   var param = [];
   for (var key in payload) {
@@ -42,7 +41,7 @@ function getUserName(user) {
     token: getToken(),
     user: user,
   };
-  
+
   // パラメータ設定
   var param = [];
   for (var key in payload) {
@@ -79,12 +78,12 @@ function newDocFile(docName, tarDirId) {
   // docsをGoogleDrive内で扱えるようにする
   var ssId = docs.getId();
   var docFile = DriveApp.getFileById(ssId);
-  
+
   // 移動先フォルダをIDで指定
   var tarDir = DriveApp.getFolderById(tarDirId);
   tarDir.addFile(docFile);
   DriveApp.getRootFolder().removeFile(docFile);
-  
+
   return docs
 }
 
@@ -92,59 +91,51 @@ function newDocFile(docName, tarDirId) {
 function flow(url) {
 
   var tarDirId = '0B4nkWeM5snYbSHZkVllObVIzUnc';
-  
-  
+
+
+
   // ドキュメントのタイトル(とりあえず日付の場合
   var today = new Date();
   var docName = Utilities.formatDate( today, "JST", "yyyyMMdd") + "MTG";
   Logger.log(docName);
-  
+
   // ファイル作成
   docs = newDocFile(docName, tarDirId);
 
   // テンプレート記載
   var ssId = docs.getId();
   var contents = Utilities.formatDate(new Date(), "JST", "yyyy年MM月dd日") + "MTG 議事録\n";
-
-  // urlから必要な情報を得る
   var spliturl = splitUrl(url);
-  Logger.log(spliturl);
-  //docs.getBody().setText(spliturl.channel + '\n' + spliturl.timestamp);
-
-  // 情報を取得する
   var response = JSON.parse(getReaction(spliturl.channel, spliturl.timestamp));
-  Logger.log(response.message.reactions);
   var attendList = getAttendList(response.message.reactions);
-  
   // 書き込み  
   docs.getBody().setText(contents + attendList);
-  
+
   // 作成したドキュメントURLを取得
   var documentUrl = docs.getUrl();
-  
+  Logger.log(documentUrl);
+
   return documentUrl
 }
 
-// postされたらここから実行される
 function doPost(e) {
   var token = PropertiesService.getScriptProperties().getProperty(getToken());
-  
+
   var options = { 
         channelId: "#mtg",
         bot_name: "カイルくん",
         icon: ":dolphin:",
   };
-  
+
   var app = SlackApp.create(token);
   var url = e.parameter.text.substr(6);
 
   documentUrl = flow(url);
-  
+
   var message = "こんばんは！議事録のテンプレートを作ったよ！\n" + documentUrl;
-  
+
   return app.postMessage( options.channelId, message, { 
              username: options.bot_name, 
              icon_emoji: options.icon 
   });
 };
-
